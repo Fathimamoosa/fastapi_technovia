@@ -1,15 +1,16 @@
 from pydantic import BaseModel, EmailStr
 
 
-class UserformSchema(BaseModel):
+class UserFormSchema(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     message: str
 
 
-class UserfromSchemaresponse(BaseModel):
+class UserResponseSchema(BaseModel):
+    id: int
     name: str
-    email: str
+    email: EmailStr
     message: str
 
     class Config:

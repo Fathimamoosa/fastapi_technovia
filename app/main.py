@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Depends
-from app.database import Base, engine, SessionLocal
+from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.database import Base, engine, SessionLocal
 import app.schemas as schemas
 import app.models as models
 
@@ -23,50 +23,29 @@ def home():
     return {"message": "FastAPI project running successfully"}
 
 
-# createUser
-@app.post("/user_create")
-def CreateUser(user: schemas.UserformSchema, db :Session=Depends(get_db)):
-    db_user = models.UserForm(name=user.name, email=user.email, message=user.message)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
+@app.post(
+    "/user_profile",
+    response_model=schemas.UserResponseSchema,
+)
+def create_user(
+    user: schemas.UserFormSchema,
+    db: Session = Depends(get_db),
+):
+    db_user = models.UserForms(
+        name=user.name.strip(),
+        email=user.email.lower().strip(),
+        message=user.message.strip(),
+    )
 
-
-@app.post("/v2/user_create")
-def usercreatev2(user:schemas.UserformSchema,db:Session=Depends(get_db)):
-    db_user=models.UserForm(name=user.name,email=user.email,message=user.message)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    return db_user
-
-
-
-
-from sqlalchemy.exc import SQLAlchemyError
-from fastapi import HTTPException
-
-@app.post("/v3/user_create")
-def usercreatev2(user: schemas.UserformSchema, db: Session = Depends(get_db)):
     try:
-        db_user = models.UserForm(
-            name=user.name,
-            email=user.email,
-            message=user.message
-        )
-
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-
         return db_user
 
-    except SQLAlchemyError:
+    except Exception:
         db.rollback()
-        raise HTTPException(status_code=500, detail="Database error")
-    
-@app.get("/v1/list", response_model=list[schemas.UserformSchema])
-def listouser(db:Session=Depends(get_db)):
-    user=db.query(models.UserForm).all()
-    return user
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to save data",
+        )
